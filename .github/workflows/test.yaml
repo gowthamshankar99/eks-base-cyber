@@ -21,6 +21,9 @@ jobs:
         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
         aws-region: us-east-1
 
+    - name: Install eksctl
+      uses: weaveworks/eksctl-action@v0.45.0        
+
     - name: scale nodes 
       shell: bash 
       run: |
