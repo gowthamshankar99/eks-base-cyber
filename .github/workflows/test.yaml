@@ -22,7 +22,9 @@ jobs:
         aws-region: us-east-1
 
     - name: Install eksctl
-      uses: weaveworks/eksctl-action@v0.45.0        
+      run: |
+        sudo curl --silent --location -o /usr/local/bin/eksctl "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz"
+        sudo chmod +x /usr/local/bin/eksctl     
 
     - name: scale nodes 
       shell: bash 
