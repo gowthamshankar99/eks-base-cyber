@@ -29,7 +29,7 @@ jobs:
     - name: scale nodes 
       shell: bash 
       run: |
-        eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 1
+        /usr/local/bin/eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 1
 
     - name: Hello World
       run: echo "Hello, World!"
