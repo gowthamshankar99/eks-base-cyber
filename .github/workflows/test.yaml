@@ -25,12 +25,13 @@ jobs:
       run: |
         curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
         sudo mv /tmp/eksctl /usr/local/bin   
-        eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 1
-        
+        eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 2
 
-    - name: scale nodes 
-      shell: bash 
+    - name: Wait for Nodes to Scale Up
       run: |
+        while [[ "$(aws eks describe-nodegroup --cluster your-cluster-name --nodegroup-name new-nodegroup-name --query 'nodegroup.scalingConfig.desiredSize')" != "2" ]]; do
+          sleep 30
+        done
 
     - name: Hello World
       run: echo "Hello, World!"
