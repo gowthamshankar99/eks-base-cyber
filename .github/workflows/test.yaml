@@ -29,7 +29,7 @@ jobs:
         curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
         sudo mv /tmp/eksctl /usr/local/bin   
         eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 1
-        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name new-nodegroup-name --query 'nodegroup.scalingConfig.desiredSize')" != "1" ]]; do
+        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20231122214931321600000003 --query 'nodegroup.scalingConfig.desiredSize')" != "1" ]]; do
           sleep 30
         done
 
