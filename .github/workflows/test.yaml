@@ -25,11 +25,12 @@ jobs:
       run: |
         sudo curl --silent --location -o /usr/local/bin/eksctl "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz"
         sudo chmod +x /usr/local/bin/eksctl     
+        eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 1
+        
 
     - name: scale nodes 
       shell: bash 
       run: |
-        /usr/local/bin/eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 1
 
     - name: Hello World
       run: echo "Hello, World!"
