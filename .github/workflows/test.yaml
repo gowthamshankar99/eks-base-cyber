@@ -63,6 +63,7 @@ jobs:
     - name: check the pods 
       run: |
         kubectl get pods -A
+        helm repo update
 
 #  Install Nifi
 #  Install ECK 
