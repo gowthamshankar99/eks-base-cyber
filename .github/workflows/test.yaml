@@ -58,7 +58,7 @@ jobs:
 
     - name: update kubeconfig 
       run: |
-        aws eks update-kubeconfig --name "dr" --region us-east-1 --role-arn arn:aws:iam::599654392735:role/DREKSRole --alias dr
+        aws eks update-kubeconfig --name "dr" --region us-east-1 --role-arn arn:aws:iam::724421275000:role/DREKSRole --alias dr
 
     - name: check the pods 
       run: |
