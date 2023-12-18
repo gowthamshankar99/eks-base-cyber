@@ -67,7 +67,7 @@ jobs:
         helm repo update
         helm install my-release cetic/nifi --values install_eks_services/values.yaml
 
-    - name: Sleep for 30s
+    - name: wait for Nifi Cluster to come up 
       uses: juliangruber/sleep-action@v2.0.0
       with:
         time: 30s    
@@ -80,7 +80,19 @@ jobs:
         helm repo update
         helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace
 
-    - name: Sleep for 30s
+    - name: wait for eck operator to come up 
       uses: juliangruber/sleep-action@v2.0.0
       with:
         time: 30s   
+
+# Spin up ECK Cluster - Spin up
+    - name: Install elastic search instance 
+      run: |
+        kubectl create -f install_eks_services/elastic.yaml      
+
+
+    - name: wait for elastic cluster to come up
+      uses: juliangruber/sleep-action@v2.0.0
+      with:
+        time: 30s           
+
