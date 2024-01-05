@@ -115,7 +115,7 @@ jobs:
           }'  | tail -1)
           if [ $RETURN_CODE -ne 200 ] || [ $RETURN_CODE -ne 201 ]; then 
             exit 1
-
+          fi
 
 
 # Create an index template and attach the policy to the template
