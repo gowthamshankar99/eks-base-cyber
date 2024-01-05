@@ -72,8 +72,8 @@ jobs:
 # Register s3 snapshot
     - name: register s3 snapshot
       run: |
-        curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository?pretty" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d'
-        {
+        curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository?pretty" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d' \
+        { 
           "type": "s3",
           "settings": {
             "bucket": "cyber-red-blue-snaphot-repo", # bucket-name, typo in name we can fix while automating
@@ -87,7 +87,7 @@ jobs:
       shell: bash 
       run: |
         SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/cyber_data_repository?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
-        curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+        curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d' \
         {
               "indices": "*"
         }
@@ -97,7 +97,7 @@ jobs:
     - name: setup Snashot Lifecyle  
       shell: bash
       run: |
-          curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+          curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'\
           {
             "name": "<cyberdatahot-{now/d}>",
             "repository": "cyber_data_repository",
@@ -118,7 +118,8 @@ jobs:
     - name: Create an index template and attach the policy to the template
       shell: bash
       run: |
-          curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_index_template/testtemplate?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d’ {
+          curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_index_template/testtemplate?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d’  \
+          {
             "index_patterns": ["cyber_data*"],
             "template": {
               "settings": {
