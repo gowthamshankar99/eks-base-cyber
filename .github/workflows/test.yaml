@@ -99,7 +99,7 @@ jobs:
       run: |
           RETURN_CODE=$(curl -X PUT -w "%{http_code}" "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
           {
-            "schedule": "",
+            "schedule": "0 0 0 * * ?",
             "name": "<cyberdatahot-{now/d}>",
             "repository": "cyber_data_repository",
             "config": {
