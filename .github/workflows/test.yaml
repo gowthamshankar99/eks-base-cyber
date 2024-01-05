@@ -26,8 +26,7 @@ jobs:
       with:
         aws-region: us-east-1
         role-to-assume: arn:aws:iam::724421275000:role/DREKSRole
-        role-session-name: MySessionName
-        #role-chaining: true        
+        role-session-name: MySessionName   
 
 #   Terraform plan and Terraform apply of cluster creation     
     # - name: Set up Terraform
@@ -44,55 +43,92 @@ jobs:
 
     # - name: Terraform Apply
     #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    #   run: terraform apply -auto-approve tfplan    
+    #   run: terraform apply -auto-approve tfplan   
 
-    - name: Install eksctl - Spin up nodegroup
+    - name: install eksctl 
       run: |
         curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
         sudo mv /tmp/eksctl /usr/local/bin   
-        eksctl scale nodegroup --cluster dr --name management-x86-al2-mng-20231122214931321600000003 --nodes 3
-        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20231122214931321600000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
-          sleep 30
-        done
 
-    - name: update kubeconfig 
+# Spin down Primary cluster      
+    # - name: Install eksctl - spin down primary cluster
+    #   run: |
+    #     eksctl scale nodegroup --cluster primary --name management-x86-al2-mng-20231219031754451800000003 --nodes 0
+    #     while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+    #       sleep 30
+    #     done
+
+    # - name: Install eksctl - Spin up nodegroup on DR Cluster
+    #   run: |
+    #     eksctl scale nodegroup --cluster demo --name management-x86-al2-mng-20231122214931321600000003 --nodes 3
+    #     while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20231122214931321600000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+    #       sleep 30
+    #     done
+
+    # - name: update kubeconfig 
+    #   run: |
+    #     aws eks update-kubeconfig --name "dr" --region us-east-1 --role-arn arn:aws:iam::724421275000:role/DREKSRole --alias dr
+
+# Register s3 snapshot
+    - name: register s3 snapshot
       run: |
-        aws eks update-kubeconfig --name "dr" --region us-east-1 --role-arn arn:aws:iam::724421275000:role/DREKSRole --alias dr
+        curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository?pretty" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d'
+        {
+          "type": "s3",
+          "settings": {
+            "bucket": "cyber-red-blue-snaphot-repo", # bucket-name, typo in name we can fix while automating
+            "region": "us-east-1"
+          }
+        }’          
 
-#  Install Nifi
-    - name: Install Nifi
+# Restore ---
+
+    - name: restore 
+      shell: bash 
       run: |
-        kubectl get pods -A
-        helm repo add cetic https://cetic.github.io/helm-charts
-        helm repo update
-        helm install my-release cetic/nifi --values install_eks_services/values.yaml
+        SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/cyber_data_repository?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
+        curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+        {
+              "indices": "*"
+        }
+        '      
 
-    - name: wait for Nifi Cluster to come up 
-      uses: juliangruber/sleep-action@v2.0.0
-      with:
-        time: 30s    
-
-#  Install ECK 
-    - name: Install ECK
+# setup Snashot Lifecyle  
+    - name: setup Snashot Lifecyle  
+      shell: bash
       run: |
-        kubectl get pods -A
-        helm repo add elastic https://helm.elastic.co
-        helm repo update
-        helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace
+          curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+          {
+            "name": "<cyberdatahot-{now/d}>",
+            "repository": "cyber_data_repository",
+            "config": {
+              "indices": ["*"],
+              "ignore_unavailable": false,
+              "include_global_state": true 
+            },
+            "retention": {
+              "expire_after": "30d",
+              "min_count": 1,
+              "max_count": 5
+            }
+          }     
 
-    - name: wait for eck operator to come up 
-      uses: juliangruber/sleep-action@v2.0.0
-      with:
-        time: 30s   
 
-# Spin up ECK Cluster - Spin up
-    - name: Install elastic search instance 
+# Create an index template and attach the policy to the template
+    - name: Create an index template and attach the policy to the template
+      shell: bash
       run: |
-        kubectl create -f install_eks_services/elastic.yaml      
+          curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_index_template/testtemplate?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d’ {
+            "index_patterns": ["cyber_data*"],
+            "template": {
+              "settings": {
+                "number_of_shards": 3,
+                "number_of_replicas": 1, 
+                "index.lifecycle.name": "cyber_data_ilm",
+                "index.lifecycle.rollover_alias": "cyber_data"
+              }
+            }
+          }’      
 
 
-    - name: wait for elastic cluster to come up
-      uses: juliangruber/sleep-action@v2.0.0
-      with:
-        time: 30s           
 
