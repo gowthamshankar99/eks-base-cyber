@@ -103,7 +103,7 @@ jobs:
 
           response_code=$(curl -s -o /dev/null -w "%{http_code}" -u "$username:$password" $url)
           echo $response_code
-          if [ $response_code -eq 200]; then
+          if [ $response_code -eq 200 ]; then
               curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
               {
                 "schedule": "",
