@@ -97,32 +97,25 @@ jobs:
     - name: setup Snashot Lifecyle  
       shell: bash
       run: |
-          url="http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty"
-          username=elastic
-          password=$${{ secrets.ELASTIC_PASSWORD}}
-
-          response_code=$(curl -s -o /dev/null -w "%{http_code}" -u "$username:$password" $url)
-          echo $response_code
-          if [ $response_code -eq 200 ]; then
-              curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
-              {
-                "schedule": "",
-                "name": "<cyberdatahot-{now/d}>",
-                "repository": "cyber_data_repository",
-                "config": {
-                  "indices": ["*"],
-                  "ignore_unavailable": false,
-                  "include_global_state": true 
-                },
-                "retention": {
-                  "expire_after": "30d",
-                  "min_count": 1,
-                  "max_count": 5
-                }
-              }'    
-          else
+          RETURN_CODE=$(curl -X PUT -w "%{http_code}" "http://${{ vars.DR_ELASTIC_ELB }}:9200/_slm/policy/daily-snapshots?pretty" -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+          {
+            "schedule": "",
+            "name": "<cyberdatahot-{now/d}>",
+            "repository": "cyber_data_repository",
+            "config": {
+              "indices": ["*"],
+              "ignore_unavailable": false,
+              "include_global_state": true 
+            },
+            "retention": {
+              "expire_after": "30d",
+              "min_count": 1,
+              "max_count": 5
+            }
+          }'  | tail -1)
+          if [ $RETURN_CODE -ne 200 ] || [ $RETURN_CODE -ne 201 ]; then 
             exit 1
-          fi 
+
 
 
 # Create an index template and attach the policy to the template
