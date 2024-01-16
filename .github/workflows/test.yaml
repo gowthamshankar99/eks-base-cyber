@@ -54,14 +54,14 @@ jobs:
     - name: Install eksctl - spin down primary cluster
       run: |
         eksctl scale nodegroup --cluster primary --name management-x86-al2-mng-20231219031754451800000003 --nodes 0
-        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+        while [[ "$(aws eks describe-nodegroup --cluster primary --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
           sleep 30
         done
 
     - name: Install eksctl - Spin up nodegroup on DR Cluster
       run: |
         eksctl scale nodegroup --cluster demo --name management-x86-al2-mng-20240105212445878400000011 --nodes 3
-        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20240105212445878400000011 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+        while [[ "$(aws eks describe-nodegroup --cluster demo --nodegroup-name management-x86-al2-mng-20240105212445878400000011 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
           sleep 30
         done
 
