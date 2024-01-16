@@ -119,7 +119,7 @@ jobs:
 # Apply ILM and Index template 
     - name: Apply ILM and Index template
       run: |
-        RETURN_CODE=$(curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200//_ilm/policy/${{ vars.PRIMARY_ECK_ILM }}" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d'
+        RETURN_CODE=$(curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_ilm/policy/${{ vars.PRIMARY_ECK_ILM }}" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d'
         {
           "policy": {
             "phases": {
