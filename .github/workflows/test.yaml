@@ -194,7 +194,7 @@ jobs:
               "indices": "*"
         }
         ')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then       
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then   
           exit 1
         fi
 
