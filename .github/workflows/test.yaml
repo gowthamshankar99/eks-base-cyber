@@ -185,18 +185,18 @@ jobs:
 
 # Restore ---
 
-    # - name: restore the snapshot in DR Cluster (hot tier)
-    #   shell: bash 
-    #   run: |
-    #     SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/cyber_data_repository_hot?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
-    #     RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository_hot/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
-    #     {
-    #           "indices": "*"
-    #     }
-    #     ')
-    #     if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then   
-    #       exit 1
-    #     fi
+    - name: restore the snapshot in DR Cluster (hot tier)
+      shell: bash 
+      run: |
+        SNAPSHOT_NAME=cyber_data_hot_snap3
+        RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository_hot/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+        {
+              "indices": "cyber_data-2024.01.16-000007"
+        }
+        ')
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then   
+          exit 1
+        fi
 
     - name: restore the snapshot in DR Cluster (cold tier)
       shell: bash 
