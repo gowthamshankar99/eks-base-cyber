@@ -139,7 +139,7 @@ jobs:
                 "min_age": "2m",
                 "actions": {
                 "searchable_snapshot" : {
-                    "snapshot_repository" : "test_data_cold_repository"
+                    "snapshot_repository" : "cyber_data_repository_cold"
                     },
                   "set_priority": {
                     "priority": 50
