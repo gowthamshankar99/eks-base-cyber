@@ -51,12 +51,12 @@ jobs:
         sudo mv /tmp/eksctl /usr/local/bin   
 
 # Spin down Primary cluster      
-    - name: Install eksctl - spin down primary cluster
-      run: |
-        eksctl scale nodegroup --cluster primary --name management-x86-al2-mng-20231219031754451800000003 --nodes 0
-        while [[ "$(aws eks describe-nodegroup --cluster primary --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
-          sleep 30
-        done
+    # - name: Install eksctl - spin down primary cluster
+    #   run: |
+    #     eksctl scale nodegroup --cluster primary --name management-x86-al2-mng-20231219031754451800000003 --nodes 0
+    #     while [[ "$(aws eks describe-nodegroup --cluster primary --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+    #       sleep 30
+    #     done
 
     - name: Install eksctl - Spin up nodegroup on DR Cluster
       run: |
@@ -246,4 +246,3 @@ jobs:
     #       if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then 
     #         exit 1
     #       fi 
-
