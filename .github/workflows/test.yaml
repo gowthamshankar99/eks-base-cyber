@@ -80,7 +80,7 @@ jobs:
             "region": "us-east-1"
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi       
 
@@ -95,7 +95,7 @@ jobs:
             "region": "us-east-1"
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi      
 
@@ -111,7 +111,7 @@ jobs:
             "region": "us-east-1"
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi    
 
@@ -149,7 +149,7 @@ jobs:
             }
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi    
 
@@ -180,7 +180,7 @@ jobs:
               }
             }
           }')
-          if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then 
+          if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
             exit 1
           fi          
 
@@ -206,11 +206,11 @@ jobs:
       run: |
         SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/cyber_data_repository_partial?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
         RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository_partial/${SNAPSHOT_NAME}/_restore?wait_for_completion=true" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
-        {
-              "indices": "*"
-        }
+          {
+                "indices": "*"
+          }
         ')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then       
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then    
           exit 1
         fi
 
