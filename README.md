@@ -14,7 +14,7 @@ This repository contains Terraform code to install EKS Cluster
 
 ## How is the elastic cluster backed up and restored ?
 
-The below are the following steps thats executed as part of the Github Actions Pipeline 
+The below are the following steps thats executed as part of the [Github Actions Pipeline](.github/workflows/test.yaml)
 
 * Register hot snapshot repository
 * Register partial snapshot repository
