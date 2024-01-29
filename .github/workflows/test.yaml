@@ -51,17 +51,17 @@ jobs:
         sudo mv /tmp/eksctl /usr/local/bin   
 
 # Spin down Primary cluster      
-    - name: Install eksctl - spin down primary cluster
-      run: |
-        eksctl scale nodegroup --cluster primary --name management-x86-al2-mng-20231219031754451800000003 --nodes 0
-        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
-          sleep 30
-        done
+    # - name: Install eksctl - spin down primary cluster
+    #   run: |
+    #     eksctl scale nodegroup --cluster primary --name management-x86-al2-mng-20231219031754451800000003 --nodes 0
+    #     while [[ "$(aws eks describe-nodegroup --cluster primary --nodegroup-name management-x86-al2-mng-20231219031754451800000003 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+    #       sleep 30
+    #     done
 
     - name: Install eksctl - Spin up nodegroup on DR Cluster
       run: |
         eksctl scale nodegroup --cluster demo --name management-x86-al2-mng-20240105212445878400000011 --nodes 3
-        while [[ "$(aws eks describe-nodegroup --cluster dr --nodegroup-name management-x86-al2-mng-20240105212445878400000011 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
+        while [[ "$(aws eks describe-nodegroup --cluster demo --nodegroup-name management-x86-al2-mng-20240105212445878400000011 --query 'nodegroup.scalingConfig.desiredSize')" != "3" ]]; do
           sleep 30
         done
 
@@ -80,7 +80,7 @@ jobs:
             "region": "us-east-1"
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi       
 
@@ -95,7 +95,7 @@ jobs:
             "region": "us-east-1"
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi      
 
@@ -111,7 +111,7 @@ jobs:
             "region": "us-east-1"
           }
         }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
           exit 1
         fi    
 
@@ -119,7 +119,7 @@ jobs:
 # Apply ILM and Index template 
     - name: Apply ILM and Index template
       run: |
-        RETURN_CODE=$(curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200//_ilm/policy/${{ vars.PRIMARY_ECK_ILM }}" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d'
+        curl -X PUT "http://${{ vars.DR_ELASTIC_ELB }}:9200/_ilm/policy/${{ vars.PRIMARY_ECK_ILM }}" -H 'Content-Type: application/json' -i -k --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -d'
         {
           "policy": {
             "phases": {
@@ -139,7 +139,7 @@ jobs:
                 "min_age": "2m",
                 "actions": {
                 "searchable_snapshot" : {
-                    "snapshot_repository" : "test_data_cold_repository"
+                    "snapshot_repository" : "cyber_data_repository_cold"
                     },
                   "set_priority": {
                     "priority": 50
@@ -148,10 +148,7 @@ jobs:
               }
             }
           }
-        }')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then
-          exit 1
-        fi    
+        }'
 
 # Create an index template and attach the policy to the template
     - name: Create an index template and attach the policy to the template
@@ -180,7 +177,7 @@ jobs:
               }
             }
           }')
-          if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then 
+          if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then
             exit 1
           fi          
 
@@ -191,27 +188,26 @@ jobs:
     - name: restore the snapshot in DR Cluster (hot tier)
       shell: bash 
       run: |
-        SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/test_data_hot_repository?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
-        RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/test_data_hot_repository/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+        SNAPSHOT_NAME=cyber_data_hot_snap3
+        RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository_hot/${SNAPSHOT_NAME}/_restore" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
         {
-              "indices": "*"
+              "indices": "cyber_data-2024.01.16-000007"
         }
         ')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then       
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then   
           exit 1
         fi
 
     - name: restore the snapshot in DR Cluster (cold tier)
       shell: bash 
       run: |
-        SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/test_data_partial_repository?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
-        RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/test_data_partial_repository/${SNAPSHOT_NAME}/_restore?wait_for_completion=true" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
-        {
-              "indices": "*",
-              "wait_"
-        }
+        SNAPSHOT_NAME=$(curl -X GET "http://${{ vars.DR_ELASTIC_ELB }}:9200/_cat/snapshots/cyber_data_repository_partial?v" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" | awk '{print $4, $5, $1}' | sort -n  | tail -n 1 | awk '{print $3}')
+        RETURN_CODE=$(curl -X POST "http://${{ vars.DR_ELASTIC_ELB }}:9200/_snapshot/cyber_data_repository_partial/${SNAPSHOT_NAME}/_restore?wait_for_completion=true" --user "elastic:${{ secrets.ELASTIC_PASSWORD }}" -H 'Content-Type: application/json' -d'
+          {
+                "indices": "*"
+          }
         ')
-        if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then       
+        if [ "$RETURN_CODE" -ne 200 ] && [ "$RETURN_CODE" -ne 201 ]; then    
           exit 1
         fi
 
@@ -246,16 +242,3 @@ jobs:
     #       if [ $RETURN_CODE -ne 200 ] && [ $RETURN_CODE -ne 201 ]; then 
     #         exit 1
     #       fi 
-
-
-
-
-# kubectl get pods 
-# running -> 
-# spin up the nodes -> CFN  
-# spin up the nifi elastic - restore the flow from s3
-# wait few minutes - sleep 
-# ---> one step to be added here...  ( set the primary context --> disable the cronjob running on primary cluster )
-# ---> 2nd step to be added here...  ( NIFI )  -> steps from Krishnan!!
-# cronjob - apply 
-# dr 
