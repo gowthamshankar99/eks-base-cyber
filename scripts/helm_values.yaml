@@ -1,0 +1,16 @@
+persistence:
+  enabled: true
+  storageClass: gp2
+initContainers:
+- name: init-aws-cli
+  image: amazon/aws-cli:latest
+  command:
+  - /bin/sh
+  - -c
+  - |
+    # Perform initialization tasks, e.g., download files
+    aws s3 cp s3://cyber-nifi-backups/flow.xml.gz /opt/nifi/data/ --region us-east-1
+    aws s3 cp s3://cyber-nifi-backups/flow.json.gz /opt/nifi/data/ --region us-east-1
+  volumeMounts:
+  - name: data
+    mountPath: /opt/nifi/data

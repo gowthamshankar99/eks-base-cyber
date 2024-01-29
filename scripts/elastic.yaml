@@ -1,0 +1,75 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elastic-cold-test
+spec:
+  http:
+    service:
+      spec:
+        type: LoadBalancer
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  version: 8.11.1
+  # secureSettings:
+  #   - secretName: my-access-key
+  #     entries:
+  #       - key: ELASTICSEARCH_S3_ACCESS_KEY
+  #       # - ELASTICSEARCH_S3_ACCESS_KEY: ${ELASTICSEARCH_S3_ACCESS_KEY}
+  #   - secretName: my-secret-key
+  #     entries:
+  #       - key: ELASTICSEARCH_S3_SECRET_KEY
+  #       # - ELASTICSEARCH_S3_SECRET_KEY: ${ELASTICSEARCH_S3_SECRET_KEY}
+  nodeSets:
+    - name: master-nodes
+      count: 1
+      config:
+        node.roles: [master, data_content, data_hot]
+        node.store.allow_mmap: false
+        node.attr.temp: hot
+      podTemplate:
+        spec:
+          containers:
+          - name: elasticsearch
+            env:
+              - name: ES_JAVA_OPTS
+                value: -Xms500m -Xmx500m
+            resources:
+              requests:
+                cpu: 0.5
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi 
+            storageClassName: gp2 
+    - name: data-nodes
+      count: 1        
+      config: 
+        node.roles: [data_content, data_cold]
+        node.store.allow_mmap: false
+        node.attr.temp: cold
+      podTemplate:
+        spec:
+          containers:
+          - name: elasticsearch        
+            env:
+              - name: ES_JAVA_OPTS
+                value: -Xms500m -Xmx500m
+            resources:
+              requests:
+                cpu: 0.5
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi 
+            storageClassName: gp2

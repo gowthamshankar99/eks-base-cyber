@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: s3-upload-cronjob
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: s3-access
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: data-hydrate-cluster-demo-nifi-0
+          containers:
+          - name: aws-cli
+            image: amazon/aws-cli:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              aws s3 cp /opt/nifi/data/flow.json.gz s3://cyber-nifi-backups/flow.json.gz --region us-east-1
+              aws s3 cp /opt/nifi/data/flow.xml.gz s3://cyber-nifi-backups/flow.xml.gz --region us-east-1
+            volumeMounts:
+                - mountPath: /opt/nifi/data
+                  name: data
+          restartPolicy: OnFailure
